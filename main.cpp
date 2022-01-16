@@ -10,6 +10,8 @@
 #include <cstring>
 #include <iomanip>
 #include <openssl/md5.h>
+//#include <boost/locale.hpp>
+//#include <boost/filesystem/path.hpp>
 #include <boost/iostreams/code_converter.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
 
@@ -49,6 +51,8 @@ int main(int argc, char *argv[])
       cout << "   dupbog C:\\books pdf;djvu;epub;fb2" << endl;
       return 0;
    }
+   //std::locale::global(boost::locale::generator().generate(""));
+   //boost::filesystem::path::imbue(std::locale());
    auto t0 = chrono::high_resolution_clock::now();
    cout << "Scanning for duplicate files..." << endl;
 
@@ -72,6 +76,7 @@ int main(int argc, char *argv[])
    for (const auto& entry : rdi(FilePath)) {
       string ext = entry.path().extension().string();
       if (entry.is_regular_file() && regex_match(ext, mask)) {
+         //cout << entry.path().string() << endl;
          string md5sum = CalcMD5(entry.path().string());
          auto& dup = candidates[md5sum];
          if (dup == nullptr) {
@@ -85,7 +90,11 @@ int main(int argc, char *argv[])
       }
    }
    auto t1 = chrono::high_resolution_clock::now();
-   cout << "Found " << candidates.size() << " groups of duplicates in ";
+   int candcount{0};
+   for (const auto& [md5, dup] : candidates) {
+      if (dup->lst.size() > 1) candcount++;
+   }
+   cout << "Found " << candcount << " groups of duplicates in ";
    cout << setprecision(4) << chrono::duration_cast<chrono::milliseconds>(t1-t0).count()/1000.0 << " secs." << endl;
    cout << "Printing duplicates:" << endl;
    int no = 1;
