@@ -1,9 +1,11 @@
 #include <iostream>
 #include <cstdint>
 #include <thread>
+#include <mutex>
 #include <filesystem>
 #include <vector>
 #include <map>
+#include <queue>
 #include <regex>
 #include <memory>
 #include <fstream>
@@ -34,13 +36,41 @@ string CalcMD5(const string& filename)
    return sout.str();
 }
 
-
 class DupList
 {
 public:
    uintmax_t fsize;
    vector<string> lst;
 };
+
+map<string,shared_ptr<DupList>> candidates;
+queue<filesystem::directory_entry> jobs;
+mutex m;
+
+void ProcessJob()
+{
+   while (jobs.size()>0) {
+      m.lock();
+      auto entry = jobs.front();
+      string filename = entry.path().string();
+      jobs.pop();
+      m.unlock();
+      try {
+         string md5sum = CalcMD5(filename);
+         m.lock();
+         auto& dup = candidates[md5sum];
+         if (dup == nullptr) {
+               shared_ptr<DupList> newdup(new DupList());
+               candidates[md5sum] = newdup;
+               dup = candidates[md5sum];
+         }
+         dup->fsize = entry.file_size();
+         dup->lst.push_back(filename);
+         m.unlock();
+      }
+      catch (...) {}
+   }
+}
 
 int main(int argc, char *argv[])
 {
@@ -70,26 +100,22 @@ int main(int argc, char *argv[])
    regex mask {"("+masks+")"};
    string ExtMask;
 
-   map<string,shared_ptr<DupList>> candidates;
-
    using rdi = std::filesystem::recursive_directory_iterator;
    for (const auto& entry : rdi(FilePath)) {
       string ext = entry.path().extension().string();
       if (entry.is_regular_file() && regex_match(ext, mask)) {
          //cout << entry.path().string() << endl;
-         try {
-            string md5sum = CalcMD5(entry.path().string());
-            auto& dup = candidates[md5sum];
-            if (dup == nullptr) {
-                  shared_ptr<DupList> newdup(new DupList());
-                  candidates[md5sum] = newdup;
-                  dup = candidates[md5sum];
-            }
-            dup->fsize = entry.file_size();
-            dup->lst.push_back(entry.path().string());
-            }
-         catch (...) {}
+         jobs.push(entry);
       }
+   }
+   int tcount = thread::hardware_concurrency();
+   vector<shared_ptr<thread>> threads;
+   for (int i = 0; i < tcount; i++) {
+       shared_ptr<thread> th(new thread(ProcessJob));
+       threads.push_back(th);
+   }
+   for (auto &th : threads) {
+     th->join();
    }
    auto t1 = chrono::high_resolution_clock::now();
    int candcount{0};
@@ -137,6 +163,5 @@ int main(int argc, char *argv[])
       delete [] fn;
    }
    cout << "Done!" << endl;
-
    return 0;
 }
