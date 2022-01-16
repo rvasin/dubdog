@@ -77,16 +77,18 @@ int main(int argc, char *argv[])
       string ext = entry.path().extension().string();
       if (entry.is_regular_file() && regex_match(ext, mask)) {
          //cout << entry.path().string() << endl;
-         string md5sum = CalcMD5(entry.path().string());
-         auto& dup = candidates[md5sum];
-         if (dup == nullptr) {
-               shared_ptr<DupList> newdup(new DupList());
-               candidates[md5sum] = newdup;
-               dup = candidates[md5sum];
-         }
-         dup->fsize = entry.file_size();
-         dup->lst.push_back(entry.path().string());
-
+         try {
+            string md5sum = CalcMD5(entry.path().string());
+            auto& dup = candidates[md5sum];
+            if (dup == nullptr) {
+                  shared_ptr<DupList> newdup(new DupList());
+                  candidates[md5sum] = newdup;
+                  dup = candidates[md5sum];
+            }
+            dup->fsize = entry.file_size();
+            dup->lst.push_back(entry.path().string());
+            }
+         catch (...) {}
       }
    }
    auto t1 = chrono::high_resolution_clock::now();
