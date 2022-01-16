@@ -8,7 +8,7 @@ While created as demo project it still could be really useful in to finding and 
 
 Build it with 
 ```
-g++ main.cpp -o dubdog
+ g++ main.cpp -o dubdog -O3 -s -llibboost_iostreams-mt -lssl -lcrypto
 ```
 
 Usage:
@@ -23,6 +23,4 @@ For example when running on Windows you may run:
 dubdog 'C:\Books' pdf,djvu,epub,fb2
 ```
 
-Current version compares files only by file's size (not MD5 or similar message digest). 
-Thus we careful to use it on real files.
-
+Current version compares files by file's MD5 hash. Boost and OpenSSL libraries are used for reading the files and computing the hashes.
