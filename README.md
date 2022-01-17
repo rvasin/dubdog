@@ -6,6 +6,9 @@ I intentionally put all code into just one main.cpp file because it's simple to 
 
 While created as demo project it still could be really useful in to finding and removing duplicate files.
 
+Watch the video tutorial on YouTube:
+https://www.youtube.com/watch?v=qdoLNcz_zYg
+
 Build it with 
 ```
  g++ main.cpp -o dubdog -O3 -s -llibboost_iostreams-mt -lssl -lcrypto
