@@ -16,23 +16,37 @@
 //#include <boost/filesystem/path.hpp>
 #include <boost/iostreams/code_converter.hpp>
 #include <boost/iostreams/device/mapped_file.hpp>
+#include <boost/crc.hpp>      // for boost::crc_basic, boost::crc_optimal
+#include <boost/cstdint.hpp>  // for boost::uint16_t
 
 using namespace std;
 
-typedef unsigned char * md5hash;
+enum class HashAlgo {haMD5, haCRC32};
+
+// command line options:
+HashAlgo ha = HashAlgo::haMD5;
+bool ViewOnly = false;
 
 string CalcMD5(const string& filename)
 {
-   unsigned char result[MD5_DIGEST_LENGTH];
-   boost::iostreams::mapped_file_source src(filename);
-   MD5((unsigned char*)src.data(), src.size(), result);
-
    std::ostringstream sout;
-   sout<<std::hex<<std::setfill('0');
-   for(long long c: result)
-   {
-       sout<<std::setw(2)<<(long long)c;
+
+   boost::iostreams::mapped_file_source src(filename);
+
+   if (ha==HashAlgo::haCRC32) {
+      boost::crc_32_type result;
+      result.process_bytes(src.data(), src.size());
+      sout<<result.checksum();
+   } else {
+      // default: MD5
+      unsigned char result[MD5_DIGEST_LENGTH];
+      MD5((unsigned char*)src.data(), src.size(), result);
+      sout<<std::hex<<std::setfill('0');
+      for(long long c: result) {
+          sout<<std::setw(2)<<(long long)c;
+      }
    }
+
    return sout.str();
 }
 
@@ -75,8 +89,11 @@ void ProcessJob()
 int main(int argc, char *argv[])
 {
    if (argc < 3) {
-      cout << "Usage: " << endl;
-      cout << "   dupdog path masks" << endl;
+      cout << "Usage:" << endl;
+      cout << "   dupdog path masks [options]" << endl << endl;
+      cout << "Options:" << endl;
+      cout << "    -a [md5]|crc32    hash algorithm" << endl;
+      cout << "    -v                view only (don't ask for file removal)" << endl << endl;
       cout << "Example:" << endl;
       cout << "   dupbog C:\\books pdf;djvu;epub;fb2" << endl;
       return 0;
@@ -98,9 +115,28 @@ int main(int argc, char *argv[])
    }
 
    regex mask {"("+masks+")"};
-   string ExtMask;
+
+   // parse other command line params
+   string param;
+   for (int i=3; i<argc; i++) {
+      param = argv[i];
+      switch (param[1]) {
+      case 'a': {
+         if (static_cast<string>(argv[i+1])=="crc32") {
+            ha=HashAlgo::haCRC32;
+            cout << "using crc32" << endl;
+         }
+         break;
+      }
+      case 'v': {
+         ViewOnly=true;
+         break;
+      }
+      }
+   }
 
    using rdi = std::filesystem::recursive_directory_iterator;
+   try {
    for (const auto& entry : rdi(FilePath)) {
       string ext = entry.path().extension().string();
       if (entry.is_regular_file() && regex_match(ext, mask)) {
@@ -108,7 +144,11 @@ int main(int argc, char *argv[])
          jobs.push(entry);
       }
    }
-   int tcount = thread::hardware_concurrency();
+   }
+   catch (exception& e) {
+      cout << "Problem with scanning:" << endl << e.what() << endl;
+   }
+   int tcount = thread::hardware_concurrency()*4;
    vector<shared_ptr<thread>> threads;
    for (int i = 0; i < tcount; i++) {
        shared_ptr<thread> th(new thread(ProcessJob));
@@ -137,30 +177,32 @@ int main(int argc, char *argv[])
          }
       }
    }
-   cout << "Which files do you want to remove? Write down files numbers separated by space and press Enter" << endl;
-   cout << "Or just press Enter if you don't want to remove any files." << endl;
-   string filenumbers;
-   cout << ">";
-   std::getline(std::cin, filenumbers);
+   if (!ViewOnly) {
+      cout << "Which files do you want to remove? Write down files numbers separated by space and press Enter" << endl;
+      cout << "Or just press Enter if you don't want to remove any files." << endl;
+      string filenumbers;
+      cout << ">";
+      std::getline(std::cin, filenumbers);
 
-   if (filenumbers.size()>0) {
-      char *fn = new char[filenumbers.length() + 1];
-      strcpy(fn, filenumbers.c_str());
-      char *num;
-      num = strtok(fn," ");
-      int i;
-      while (num) {
-         i = stoi(num) ;
-         cout << "Removing file: #" << i << " " << flist[i-1] << endl;
-         try {
-            filesystem::remove(flist[i-1]);
+      if (filenumbers.size()>0) {
+         char *fn = new char[filenumbers.length() + 1];
+         strcpy(fn, filenumbers.c_str());
+         char *num;
+         num = strtok(fn," ");
+         int i;
+         while (num) {
+            i = stoi(num) ;
+            cout << "Removing file: #" << i << " " << flist[i-1] << endl;
+            try {
+               filesystem::remove(flist[i-1]);
+            }
+            catch (...) {
+               cout << "Cannot remove file" << endl;
+            }
+            num = strtok(nullptr," ");
          }
-         catch (...) {
-            cout << "Cannot remove file" << endl;
-         }
-         num = strtok(nullptr," ");
+         delete [] fn;
       }
-      delete [] fn;
    }
    cout << "Done!" << endl;
    return 0;
