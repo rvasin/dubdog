@@ -31,4 +31,6 @@ For example when running on Windows you may run:
 dubdog 'C:\Books' pdf,djvu,epub,fb2
 ```
 
-Current version compares files by file's MD5 hash. Boost and OpenSSL libraries are used for reading the files and computing the hashes.
+Current version compares files by file's MD5 hash by default. Optionally it's possible to use CRC32 hash by specifying -a crc32 in command line.
+
+Boost and OpenSSL libraries are used for reading the files and computing the hashes.
