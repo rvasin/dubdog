@@ -124,7 +124,6 @@ int main(int argc, char *argv[])
       case 'a': {
          if (static_cast<string>(argv[i+1])=="crc32") {
             ha=HashAlgo::haCRC32;
-            cout << "using crc32" << endl;
          }
          break;
       }
