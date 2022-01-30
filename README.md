@@ -16,7 +16,12 @@ Build it with
 
 Usage:
 ```
-dubdog path extensions
+dubdog path extensions [options]
+
+Options:
+
+-a [md5]|crc32    hash algorithm
+-v                view only (don't ask for file removal)
 ```
 
 extensions - is comma separated list of file's extensions.
