@@ -29,7 +29,7 @@ bool ViewOnly = false;
 
 string CalcMD5(const string& filename)
 {
-   std::ostringstream sout;
+   ostringstream sout;
 
    boost::iostreams::mapped_file_source src(filename);
 
@@ -41,9 +41,9 @@ string CalcMD5(const string& filename)
       // default: MD5
       unsigned char result[MD5_DIGEST_LENGTH];
       MD5((unsigned char*)src.data(), src.size(), result);
-      sout<<std::hex<<std::setfill('0');
+      sout<<hex<<setfill('0');
       for(long long c: result) {
-          sout<<std::setw(2)<<(long long)c;
+          sout<<setw(2)<<(long long)c;
       }
    }
 
@@ -134,7 +134,7 @@ int main(int argc, char *argv[])
       }
    }
 
-   using rdi = std::filesystem::recursive_directory_iterator;
+   using rdi = filesystem::recursive_directory_iterator;
    try {
    for (const auto& entry : rdi(FilePath)) {
       string ext = entry.path().extension().string();
@@ -146,6 +146,7 @@ int main(int argc, char *argv[])
    }
    catch (exception& e) {
       cout << "Problem with scanning:" << endl << e.what() << endl;
+      return 1;
    }
    int tcount = thread::hardware_concurrency()*4;
    vector<shared_ptr<thread>> threads;
@@ -181,7 +182,7 @@ int main(int argc, char *argv[])
       cout << "Or just press Enter if you don't want to remove any files." << endl;
       string filenumbers;
       cout << ">";
-      std::getline(std::cin, filenumbers);
+      getline(cin, filenumbers);
 
       if (filenumbers.size()>0) {
          char *fn = new char[filenumbers.length() + 1];
