@@ -26,8 +26,9 @@ enum class HashAlgo {haMD5, haCRC32};
 // command line options:
 HashAlgo ha = HashAlgo::haMD5;
 bool ViewOnly = false;
+int ThreadsCount = 0;
 
-string CalcMD5(const string& filename)
+string CalcHash(const string& filename)
 {
    ostringstream sout;
 
@@ -70,7 +71,7 @@ void ProcessJob()
       jobs.pop();
       m.unlock();
       try {
-         string md5sum = CalcMD5(filename);
+         string md5sum = CalcHash(filename);
          m.lock();
          auto& dup = candidates[md5sum];
          if (dup == nullptr) {
@@ -93,6 +94,7 @@ int main(int argc, char *argv[])
       cout << "   dupdog path masks [options]" << endl << endl;
       cout << "Options:" << endl;
       cout << "    -a [md5]|crc32    hash algorithm" << endl;
+      cout << "    -t count          threads count" << endl;
       cout << "    -v                view only (don't ask for file removal)" << endl << endl;
       cout << "Example:" << endl;
       cout << "   dupbog C:\\books pdf;djvu;epub;fb2" << endl;
@@ -127,6 +129,10 @@ int main(int argc, char *argv[])
          }
          break;
       }
+      case 't': {
+         ThreadsCount = stoi(argv[i+1]);
+         break;
+      }
       case 'v': {
          ViewOnly=true;
          break;
@@ -148,9 +154,9 @@ int main(int argc, char *argv[])
       cout << "Problem with scanning:" << endl << e.what() << endl;
       return 1;
    }
-   int tcount = thread::hardware_concurrency()*4;
+   if (!ThreadsCount) ThreadsCount = thread::hardware_concurrency()*2;
    vector<shared_ptr<thread>> threads;
-   for (int i = 0; i < tcount; i++) {
+   for (int i = 0; i < ThreadsCount; i++) {
        shared_ptr<thread> th(new thread(ProcessJob));
        threads.push_back(th);
    }

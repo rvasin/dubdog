@@ -21,6 +21,7 @@ dubdog path extensions [options]
 Options:
 
 -a [md5]|crc32    hash algorithm
+-t count          threads count
 -v                view only (don't ask for file removal)
 ```
 
