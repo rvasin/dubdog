@@ -170,44 +170,46 @@ int main(int argc, char *argv[])
    }
    cout << "Found " << candcount << " groups of duplicates in ";
    cout << setprecision(4) << chrono::duration_cast<chrono::milliseconds>(t1-t0).count()/1000.0 << " secs." << endl;
-   cout << "Printing duplicates:" << endl;
-   int no = 1;
-   vector<string> flist;
-   for (const auto& [md5, dup] : candidates) {
-      if (dup->lst.size() > 1) {
-         cout << "hash: " << md5 << ", size: " <<  dup->fsize << endl;
-         for (const auto& f : dup->lst) {
-            cout << "#" << no << " " << f << endl;
-            flist.push_back(f);
-            no++;
+   if (candcount) {
+      cout << "Printing duplicates:" << endl;
+      int no = 1;
+      vector<string> flist;
+      for (const auto& [md5, dup] : candidates) {
+         if (dup->lst.size() > 1) {
+            cout << "hash: " << md5 << ", size: " <<  dup->fsize << endl;
+            for (const auto& f : dup->lst) {
+               cout << "#" << no << " " << f << endl;
+               flist.push_back(f);
+               no++;
+            }
          }
       }
-   }
-   if (!ViewOnly) {
-      cout << "Which files do you want to remove? Write down files numbers separated by space and press Enter" << endl;
-      cout << "Or just press Enter if you don't want to remove any files." << endl;
-      string filenumbers;
-      cout << ">";
-      getline(cin, filenumbers);
+      if (!ViewOnly) {
+         cout << "Which files do you want to remove? Write down files numbers separated by space and press Enter" << endl;
+         cout << "Or just press Enter if you don't want to remove any files." << endl;
+         string filenumbers;
+         cout << ">";
+         getline(cin, filenumbers);
 
-      if (filenumbers.size()>0) {
-         char *fn = new char[filenumbers.length() + 1];
-         strcpy(fn, filenumbers.c_str());
-         char *num;
-         num = strtok(fn," ");
-         int i;
-         while (num) {
-            i = stoi(num) ;
-            cout << "Removing file: #" << i << " " << flist[i-1] << endl;
-            try {
-               filesystem::remove(flist[i-1]);
+         if (filenumbers.size()>0) {
+            char *fn = new char[filenumbers.length() + 1];
+            strcpy(fn, filenumbers.c_str());
+            char *num;
+            num = strtok(fn," ");
+            int i;
+            while (num) {
+               i = stoi(num) ;
+               cout << "Removing file: #" << i << " " << flist[i-1] << endl;
+               try {
+                  filesystem::remove(flist[i-1]);
+               }
+               catch (...) {
+                  cout << "Cannot remove file" << endl;
+               }
+               num = strtok(nullptr," ");
             }
-            catch (...) {
-               cout << "Cannot remove file" << endl;
-            }
-            num = strtok(nullptr," ");
+            delete [] fn;
          }
-         delete [] fn;
       }
    }
    cout << "Done!" << endl;
