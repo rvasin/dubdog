@@ -21,7 +21,7 @@
 
 using namespace std;
 
-enum class HashAlgo {haMD5, haCRC32};
+enum class HashAlgo {haMD5, haCRC32, haFSO};
 
 // command line options:
 HashAlgo ha = HashAlgo::haMD5;
@@ -71,7 +71,12 @@ void ProcessJob()
       jobs.pop();
       m.unlock();
       try {
-         string md5sum = CalcHash(filename);
+         string md5sum;
+         if (ha==HashAlgo::haFSO) {
+            md5sum = to_string(entry.file_size());
+         } else {
+            md5sum = CalcHash(filename);
+         }
          m.lock();
          auto& dup = candidates[md5sum];
          if (dup == nullptr) {
@@ -93,9 +98,9 @@ int main(int argc, char *argv[])
       cout << "Usage:" << endl;
       cout << "   dupdog path masks [options]" << endl << endl;
       cout << "Options:" << endl;
-      cout << "    -a [md5]|crc32    hash algorithm" << endl;
-      cout << "    -t count          threads count" << endl;
-      cout << "    -v                view only (don't ask for file removal)" << endl << endl;
+      cout << "    -a [md5]|crc32|fso    hash algorithm" << endl;
+      cout << "    -t count              threads count" << endl;
+      cout << "    -v                    view only (don't ask for file removal)" << endl << endl;
       cout << "Example:" << endl;
       cout << "   dupbog C:\\books pdf;djvu;epub;fb2" << endl;
       return 0;
@@ -124,8 +129,11 @@ int main(int argc, char *argv[])
       param = argv[i];
       switch (param[1]) {
       case 'a': {
-         if (static_cast<string>(argv[i+1])=="crc32") {
+         string alg = static_cast<string>(argv[i+1]);
+         if (alg=="crc32") {
             ha=HashAlgo::haCRC32;
+         } else if (alg=="fso") {
+            ha=HashAlgo::haFSO;
          }
          break;
       }
@@ -157,8 +165,7 @@ int main(int argc, char *argv[])
    if (!ThreadsCount) ThreadsCount = thread::hardware_concurrency()*2;
    vector<shared_ptr<thread>> threads;
    for (int i = 0; i < ThreadsCount; i++) {
-       shared_ptr<thread> th(new thread(ProcessJob));
-       threads.push_back(th);
+       threads.emplace_back(make_shared<thread>(ProcessJob));
    }
    for (auto &th : threads) {
      th->join();
