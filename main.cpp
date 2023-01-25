@@ -79,10 +79,9 @@ void ProcessJob()
          }
          m.lock();
          auto& dup = candidates[md5sum];
-         if (dup == nullptr) {
-               shared_ptr<DupList> newdup(new DupList());
-               candidates[md5sum] = newdup;
-               dup = candidates[md5sum];
+         if (!dup) {
+               dup = make_shared<DupList>(DupList());
+               candidates[md5sum] = dup;
          }
          dup->fsize = entry.file_size();
          dup->lst.push_back(filename);
