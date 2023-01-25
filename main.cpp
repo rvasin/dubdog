@@ -65,11 +65,14 @@ mutex m;
 void ProcessJob()
 {
    while (jobs.size()>0) {
-      m.lock();
-      auto entry = jobs.front();
-      string filename = entry.path().string();
-      jobs.pop();
-      m.unlock();
+      string filename;
+      filesystem::directory_entry entry;
+      {
+         scoped_lock lock(m);
+         entry = jobs.front();
+         filename = entry.path().string();
+         jobs.pop();
+      }
       try {
          string md5sum;
          if (ha==HashAlgo::haFSO) {
@@ -77,15 +80,16 @@ void ProcessJob()
          } else {
             md5sum = CalcHash(filename);
          }
-         m.lock();
-         auto& dup = candidates[md5sum];
-         if (!dup) {
-               dup = make_shared<DupList>(DupList());
-               candidates[md5sum] = dup;
+         {
+            scoped_lock lock(m);
+            auto& dup = candidates[md5sum];
+            if (!dup) {
+                  dup = make_shared<DupList>(DupList());
+                  candidates[md5sum] = dup;
+            }
+            dup->fsize = entry.file_size();
+            dup->lst.push_back(filename);
          }
-         dup->fsize = entry.file_size();
-         dup->lst.push_back(filename);
-         m.unlock();
       }
       catch (...) {}
    }
