@@ -4,10 +4,17 @@ An ultimate CLI duplicate file finder and remover!
 Watch the video tutorial on YouTube:
 https://www.youtube.com/watch?v=qdoLNcz_zYg
 
-Build it with 
+Build it with CMake:
+```bash
+mkdir build
+cd build/
+cmake ..
+cmake --build .
 ```
-g++ main.cpp -o dubdog -O3 -s -llibboost_iostreams-mt -lssl -lcrypto
-```
+
+Build it with G++ directly:
+```bash
+g++ main.cpp -o dubdog -O3 -s -llibboost_iostreams-mt -lssl -lcrypto ```
 
 Usage:
 ```
@@ -23,7 +30,7 @@ Options:
 `extensions` is a comma separated list of file's extensions.
 
 For example when running on Windows you may run:
-```
+```bash
 dubdog 'C:\Books' pdf,djvu,epub,fb2
 ```
 
@@ -32,3 +39,7 @@ Current version compares files by file's MD5 hash by default. Optionally it's po
 - `-a fso` parameter means comparison by "file size only".
 
 Boost and OpenSSL libraries are used for reading the files and computing the hashes.
+On Ubuntu/Debian install these libraries with:
+```bash
+apt install libboost-iostreams-dev libssl-dev
+```

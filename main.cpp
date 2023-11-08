@@ -19,6 +19,7 @@
 #include <boost/crc.hpp>      // for boost::crc_basic, boost::crc_optimal
 #include <boost/cstdint.hpp>  // for boost::uint16_t
 
+
 using namespace std;
 
 enum class HashAlgo {haMD5, haCRC32, haFSO};
