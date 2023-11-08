@@ -25,7 +25,7 @@ cmake ..
 cmake --build .
 ```
 
-### Build with G++ directly:
+### Build directly with G++
 
 ```bash
 g++ main.cpp -o dubdog -O3 -s -llibboost_iostreams-mt -lssl -lcrypto
@@ -51,7 +51,8 @@ For example when running on Windows you may run:
 dubdog 'C:\Books' pdf,djvu,epub,fb2
 ```
 
-Current version compares files by file's MD5 hash by default. Optionally it's possible to use:
+Current version compares files by file's MD5 hash by default. Optionally it's possible to use `-a hash` in command line:
 
-- CRC32 hash by specifying `-a crc32` in command line.
-- `-a fso` parameter means comparison by "file size only".
+- `-a crc32` is for CRC32 hash
+- `-a fso` is comparison by "file size only". It's not a hash algorithm but it's very fast while it may produce many duplicates.
+
